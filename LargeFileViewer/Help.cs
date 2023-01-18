@@ -18,7 +18,7 @@ namespace LargeFileViewer
         private void Help_Load(object sender, EventArgs e)
         {
             HttpClient client = new HttpClient();
-            string helpURI = "https://raw.githubusercontent.com/mdmadonna/LargeFileViewer/main/Help.md";
+            string helpURI = "https://raw.githubusercontent.com/mdmadonna/LargeFileViewer/master/Help.md";
             try
             {
                 string responseBody = client.GetStringAsync(helpURI).Result;
