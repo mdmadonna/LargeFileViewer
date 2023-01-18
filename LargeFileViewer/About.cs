@@ -26,7 +26,7 @@ namespace LargeFileViewer
             lblCopy.Text = "\u00a9 2023 AJM Software, L.L.C.";
 
             HttpClient client = new HttpClient();
-            string licenseURI = "https://raw.githubusercontent.com/mdmadonna/LargeFileViewer/main/LICENSE";
+            string licenseURI = "https://raw.githubusercontent.com/mdmadonna/LargeFileViewer/master/LICENSE.txt";
             try
             {
                 string responseBody = client.GetStringAsync(licenseURI).Result;
