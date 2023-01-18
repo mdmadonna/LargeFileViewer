@@ -9,6 +9,7 @@ using System.Text;
 
 using static LargeFileViewer.common;
 using static LargeFileViewer.OptionsManager;
+using static System.Environment;
 
 namespace LargeFileViewer
 {
@@ -17,6 +18,10 @@ namespace LargeFileViewer
         internal FileMonitor? fileMonitor;
         public Main()
         {
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(ExHandler);
+
+            throw new Exception("Test Error");
+
             InitializeComponent();
             StartUpFont = lvFile.Font;
             OptionsManager.Initialize();
@@ -38,6 +43,7 @@ namespace LargeFileViewer
 
         }
 
+        #region eventhandlers
         /// <summary>
         /// Executed if the default Font for the ListView changes.
         /// </summary>
@@ -90,6 +96,56 @@ namespace LargeFileViewer
                 lvFile.SelectedIndices.Add(linenum);
             }
         }
+
+        /// <summary>
+        /// Global error handler
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        internal void ExHandler(object? sender, UnhandledExceptionEventArgs e)
+        {
+            bManualStop = true;
+            Form? find = AppForm(FINDFORM);
+            if (find != null) { ((Find)find).bCancelSearch= true; }
+
+            string errorMsg = "A fatal error has occurred." + Environment.NewLine;
+            Exception ex = (Exception)e.ExceptionObject;
+            errorMsg += ex.Message + Environment.NewLine;
+            errorMsg += "The program will now terminate";
+            ShowMessage(errorMsg, MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            WriteErrorLog(string.Format("Error Message: {0}", ex.Message));
+            if (!string.IsNullOrEmpty(ex.Source)) WriteErrorLog(string.Format("Source: {0}", ex.Source));
+            if (!string.IsNullOrEmpty(ex.StackTrace)) WriteErrorLog(string.Format("Trace: {0}", ex.StackTrace));
+
+            if (ex.InnerException != null)
+            {
+                WriteErrorLog(string.Format("Inner Error Message: {0}", ex.InnerException.Message));
+                if (!string.IsNullOrEmpty(ex.InnerException.Source)) WriteErrorLog(string.Format("Inner Source: {0}", ex.InnerException.Source));
+                if (!string.IsNullOrEmpty(ex.InnerException.StackTrace)) WriteErrorLog(string.Format("Inner Trace: {0}", ex.InnerException.StackTrace));
+            }
+            Application.Exit();
+        }
+
+        /// <summary>
+        /// Write a line to the error log
+        /// </summary>
+        /// <param name="errorMsg"></param>
+        internal void WriteErrorLog(string errorMsg)
+        {
+            var commonpath = GetFolderPath(SpecialFolder.CommonApplicationData);
+            string dir = Path.Combine(commonpath, "ajmsoft\\LargeFileViewer");
+            string logfilename = Path.Combine(dir, LOGFILENAME);
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(logfilename, true))
+                {
+                    sw.WriteLine(string.Format("{0}|{1}", DateTime.Now, errorMsg));
+                }
+            }
+            catch { }
+        }
+        #endregion
 
         /// <summary>
         /// Populate the recently used files in the menu

@@ -52,6 +52,7 @@ namespace LargeFileViewer
         internal const string GOTOFORM = "GoTo";
         internal const string HELPFORM = "Help";
         internal const string LFVMUTEX = "LARGEFILEVIEWERMUTEX";
+        internal const string LOGFILENAME = "error.log";
         internal const string OPTIONSFORM = "Options";
         internal const string OPTIONSFILENAME = "options.config";
         internal const string PROGRAMNAME = "Large File Viewer";
