@@ -23,7 +23,7 @@ namespace LargeFileViewer
             lblVersion.Text = Assembly.GetEntryAssembly().GetName().Version.ToString();
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
             lblCompileDate.Text = File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).ToString();
-            lblCopy.Text = "\u00a9 2023 AJM Software, L.L.C.";
+            lblCopy.Text = "Copyright \u00a9 2023 AJM Software, L.L.C.";
 
             HttpClient client = new HttpClient();
             string licenseURI = "https://raw.githubusercontent.com/mdmadonna/LargeFileViewer/master/LICENSE.txt";
