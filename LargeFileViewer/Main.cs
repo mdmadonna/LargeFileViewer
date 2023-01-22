@@ -19,9 +19,6 @@ namespace LargeFileViewer
         public Main()
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(ExHandler);
-
-            throw new Exception("Test Error");
-
             InitializeComponent();
             StartUpFont = lvFile.Font;
             OptionsManager.Initialize();
