@@ -533,7 +533,7 @@ namespace LargeFileViewer
             {
                 toolStripLoadStatus.Text = string.Format("Reading {0}", _linecount);
                 lvFile.VirtualListSize = FileProperties.LineCount;
-                toolStripProgress.Value = Convert.ToInt32((FileProperties.BytesRead * 100) / FileProperties.FileLen);
+                toolStripProgress.Value = Convert.ToInt32((FileProperties.BytesRead / FileProperties.FileLen) / 100);
                 Application.DoEvents();
             }
             lvFile.VirtualListSize = _linecount;

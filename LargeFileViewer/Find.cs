@@ -213,7 +213,7 @@ namespace LargeFileViewer
                 toolStripStatus.Text = string.Format("{0} of {1}", searchcount, idx.Count);
                 matchCount = (FoundList != null) ? FoundList.Count : 0;
                 if (matchCount != 0) toolStripResults.Text = string.Format("{0} matches", matchCount.ToString());
-                toolStripProgress.Value = Convert.ToInt32((searchcount * 100) / FileProperties.LineCount);
+                toolStripProgress.Value = Convert.ToInt32((searchcount / FileProperties.LineCount) / 100);
                 if (FoundPos != 0) toolStripPosition.Text = string.Format("{0} of {1}", FoundPos, matchCount.ToString());
                 if (FoundPos == 0 && matchCount > 0)
                 {
