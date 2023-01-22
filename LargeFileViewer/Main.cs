@@ -2,7 +2,7 @@
  * 
  *  Main class for the Latge File Viewer.
  *  
- *  Copyright 2023 © AJM Software L.L.C.
+ *  Copyright 2023 Â© AJM Software L.L.C.
  **********************************************************************************************/
 
 using System.Text;
@@ -19,9 +19,6 @@ namespace LargeFileViewer
         public Main()
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(ExHandler);
-
-            throw new Exception("Test Error");
-
             InitializeComponent();
             StartUpFont = lvFile.Font;
             OptionsManager.Initialize();
