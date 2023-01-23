@@ -19,6 +19,7 @@ namespace LargeFileViewer
             lblFileName.Text = FileProperties.BaseFileName;
             txtFullFileName.Text = FileProperties.FileName;
             txtDirectory.Text = FileProperties.FilePath;
+            lblEndings.Text = FileProperties.FileEndings == FileEndingType.windows ? "Windows" : "Unix";
             lblExtension.Text = Path.GetExtension(FileProperties.FileName);
             lblLength.Text = string.Format("{0} bytes", FileProperties.FileLen.ToString("N0"));
             lblLines.Text = FileProperties.LineCount.ToString();

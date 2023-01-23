@@ -51,6 +51,8 @@
             this.btnClose = new System.Windows.Forms.Button();
             this.txtFullFileName = new System.Windows.Forms.TextBox();
             this.txtDirectory = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.lblEndings = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblFileName
@@ -85,7 +87,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(27, 133);
+            this.label6.Location = new System.Drawing.Point(27, 148);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(98, 15);
             this.label6.TabIndex = 6;
@@ -94,7 +96,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(25, 163);
+            this.label7.Location = new System.Drawing.Point(25, 178);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(85, 15);
             this.label7.TabIndex = 7;
@@ -103,7 +105,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(25, 148);
+            this.label8.Location = new System.Drawing.Point(25, 163);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(78, 15);
             this.label8.TabIndex = 8;
@@ -112,7 +114,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(25, 118);
+            this.label9.Location = new System.Drawing.Point(25, 133);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(47, 15);
             this.label9.TabIndex = 9;
@@ -150,7 +152,7 @@
             // 
             this.lblLength.AutoSize = true;
             this.lblLength.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblLength.Location = new System.Drawing.Point(130, 118);
+            this.lblLength.Location = new System.Drawing.Point(130, 133);
             this.lblLength.Name = "lblLength";
             this.lblLength.Size = new System.Drawing.Size(59, 15);
             this.lblLength.TabIndex = 15;
@@ -160,7 +162,7 @@
             // 
             this.lblLines.AutoSize = true;
             this.lblLines.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblLines.Location = new System.Drawing.Point(130, 133);
+            this.lblLines.Location = new System.Drawing.Point(130, 148);
             this.lblLines.Name = "lblLines";
             this.lblLines.Size = new System.Drawing.Size(48, 15);
             this.lblLines.TabIndex = 16;
@@ -170,7 +172,7 @@
             // 
             this.lblModifyDate.AutoSize = true;
             this.lblModifyDate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblModifyDate.Location = new System.Drawing.Point(130, 163);
+            this.lblModifyDate.Location = new System.Drawing.Point(130, 178);
             this.lblModifyDate.Name = "lblModifyDate";
             this.lblModifyDate.Size = new System.Drawing.Size(86, 15);
             this.lblModifyDate.TabIndex = 17;
@@ -180,7 +182,7 @@
             // 
             this.lblCreateDate.AutoSize = true;
             this.lblCreateDate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblCreateDate.Location = new System.Drawing.Point(130, 148);
+            this.lblCreateDate.Location = new System.Drawing.Point(130, 163);
             this.lblCreateDate.Name = "lblCreateDate";
             this.lblCreateDate.Size = new System.Drawing.Size(84, 15);
             this.lblCreateDate.TabIndex = 18;
@@ -284,12 +286,33 @@
             this.txtDirectory.TabIndex = 27;
             this.txtDirectory.Text = "txtDirectory";
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(25, 118);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(52, 15);
+            this.label2.TabIndex = 28;
+            this.label2.Text = "Endings:";
+            // 
+            // lblEndings
+            // 
+            this.lblEndings.AutoSize = true;
+            this.lblEndings.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.lblEndings.Location = new System.Drawing.Point(132, 118);
+            this.lblEndings.Name = "lblEndings";
+            this.lblEndings.Size = new System.Drawing.Size(62, 15);
+            this.lblEndings.TabIndex = 29;
+            this.lblEndings.Text = "lblEndings";
+            // 
             // Props
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnClose;
             this.ClientSize = new System.Drawing.Size(593, 233);
+            this.Controls.Add(this.lblEndings);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.txtDirectory);
             this.Controls.Add(this.txtFullFileName);
             this.Controls.Add(this.btnClose);
@@ -350,5 +373,7 @@
         private Button btnClose;
         private TextBox txtFullFileName;
         private TextBox txtDirectory;
+        private Label label2;
+        private Label lblEndings;
     }
 }

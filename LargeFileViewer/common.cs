@@ -22,12 +22,23 @@ namespace LargeFileViewer
     }
 
     /// <summary>
+    /// Track type of file endings
+    /// </summary>
+    enum FileEndingType
+    {
+        windows,
+        unix,
+        unknown
+    }
+
+    /// <summary>
     /// Information related to the file being viewed
     /// </summary>
     internal static class FileProperties
     {
         public static string FileName => common._filename;
         public static long FileLen => common._filelen;
+        public static FileEndingType FileEndings => common._fileEndingType;
         public static DateTime CreateDate => common._createdate;
         public static DateTime ModifiedDate => common._modifieddate;
         public static bool ReadOnly => common._readonly;
@@ -61,6 +72,7 @@ namespace LargeFileViewer
 
         internal static string _filename = string.Empty;
         internal static long _filelen;
+        internal static FileEndingType _fileEndingType;
         internal static DateTime _createdate;
         internal static DateTime _modifieddate;
         internal static DateTime _accesseddate;
@@ -123,7 +135,44 @@ namespace LargeFileViewer
             _hidden = (fi.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden;
             _linecount = 0;
             _bytesread = 0;
+            if (!GetFileEnding(fName, out _fileEndingType)) return false;
             return true;
+        }
+
+        /// <summary>
+        /// Read the file being viewed and record the position of each line in the file.
+        /// This is run as a background task.
+        /// </summary>
+        internal static bool GetFileEnding(string fName, out FileEndingType fsType)
+        {
+            fsType = FileEndingType.unknown;
+            string? line = string.Empty;
+            try
+            {
+                StreamReader sr = new StreamReader(_filename);
+                line = sr.ReadLine();
+                sr.Close();
+                FileStream fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                fs.Seek(string.IsNullOrEmpty(line) ? 0 : line.Length, SeekOrigin.Begin);
+                byte[] buff = new byte[2];
+                int bytecount = fs.Read(buff, 0, buff.Length);
+                fs.Close();
+                // if 0 or 1 byte is returned, we have an empty file or a file that is
+                // 1 byte in length so it doesn't matter what the file endings are.
+                if (bytecount != 2)
+                {
+                    fsType = FileEndingType.windows;
+                }
+                else
+                {
+                    // If we find an LFCR mark it as windows otherwise assume it's unix, mac or 
+                    // old mac, all of which have 1 byte line endings.
+                    if (buff[0] == 0x0D && buff[1] == 0x0A) { fsType = FileEndingType.windows; }
+                    else { fsType = FileEndingType.unix; }
+                }
+                return true;
+            }
+            catch { return false; }
         }
 
         /// <summary>
@@ -148,6 +197,7 @@ namespace LargeFileViewer
             _linecount = 0;
             long curPos = 0;
             string? line = string.Empty;
+            int eCount = _fileEndingType == FileEndingType.windows ? 2 : 1;
 
             StreamReader sr = new StreamReader(_filename);
             while ((line = sr.ReadLine()) != null && !bManualStop)
@@ -159,7 +209,7 @@ namespace LargeFileViewer
                     len = line.Length
                 };
                 idx.TryAdd(_linecount, li);
-                curPos += line.Length + 2;
+                curPos += line.Length + eCount;
                 _bytesread = curPos;
                 if (bManualStop) break;
             }
