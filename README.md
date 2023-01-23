@@ -1,6 +1,6 @@
 # LargeFileViewer
 
-The Large File Viewer will allow you to view very large files using a minimum amount of memory. The program is designed specifically to run on Windows and view standard Windows text files but could be easily adapted to accommodate Unix/MacOS text files as well. It was originally designed to view very large log files, database dumps, etc. We use it to view text files up to 50-60GB.
+The Large File Viewer will allow you to view very large files using a minimum amount of memory. The program is designed specifically to run on Windows and view standard  text files with consistent line endings. It was originally useded to view very large log files, database dumps, etc. We use it to view text files up to 50-60GB.
 
 Key points regarding the program:
 
