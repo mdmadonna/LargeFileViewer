@@ -11,3 +11,5 @@ Key points regarding the program:
 5. The program does maintain a list of addresses for each line so a small amount of memory is used per line.
 6. Searching requires that the entire file be read to find the data you're looking for.
 7. The program does not currently have update capabilities.
+
+It's important to note that this program uses a ListView to display text.  The text is displayed in a single column which is limited to 259 characters. If the line is longer than 259 characters, the display will be truncated. You can still copy the line using the ListView Context Menu to place the entire line to the clipboard. This limitation does not affect search functionality.
