@@ -101,7 +101,7 @@ namespace LargeFileViewer
         /// </summary>
         static common()
         {
-            MaxLines = 40000000;
+            MaxLines = 100000000;
         }
 
         /// <summary>
