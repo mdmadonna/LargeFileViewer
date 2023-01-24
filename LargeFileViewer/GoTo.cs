@@ -19,14 +19,14 @@ namespace LargeFileViewer
 
         private void GoTo_Load(object sender, EventArgs e)
         {
-            lblRange.Text = string.Format("Range: {0} - {1}", FileProperties.LineCount == 0 ? 0 : 1, FileProperties.LineCount);
+            lblRange.Text = string.Format("Range: {0} - {1}", FileProperties.LineCount == 0 ? 0 : 1, Math.Min(FileProperties.LineCount, MaxLines));
         }
 
         private void btnGoTo_Click(object sender, EventArgs e)
         {
             if (!int.TryParse(txtLineNumber.Text, out int lineNumber))
             { ShowMessage("Please enter a valid line number."); return; }
-            if (lineNumber <= 0 || lineNumber > FileProperties.LineCount) { ShowMessage("Please enter a valid line number."); ; return; }
+            if (lineNumber <= 0 || lineNumber > Math.Min(FileProperties.LineCount, MaxLines)) { ShowMessage("Please enter a valid line number."); ; return; }
             LineNumber = lineNumber;
             this.Close();
         }

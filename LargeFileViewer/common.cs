@@ -94,6 +94,16 @@ namespace LargeFileViewer
         internal static Font? SelectedFont;     // Selected Font for the ListView
         internal static Font? StartUpFont;      // Initial Font for the ListView
 
+        internal static int MaxLines { get; private set; }
+
+        /// <summary>
+        /// Static Constructor
+        /// </summary>
+        static common()
+        {
+            MaxLines = 40000000;
+        }
+
         /// <summary>
         /// Open a file a populate properties.
         /// </summary>

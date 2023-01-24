@@ -1,6 +1,6 @@
 /**********************************************************************************************
  * 
- *  Main class for the Latge File Viewer.
+ *  Main class for the Large File Viewer.
  *  
  *  Copyright 2023 © AJM Software L.L.C.
  **********************************************************************************************/
@@ -532,13 +532,15 @@ namespace LargeFileViewer
             while (!bFileLoaded & !bManualStop)
             {
                 toolStripLoadStatus.Text = string.Format("Reading {0}", _linecount);
-                lvFile.VirtualListSize = FileProperties.LineCount;
-                toolStripProgress.Value = Convert.ToInt32((FileProperties.BytesRead / FileProperties.FileLen) / 100);
+                lvFile.VirtualListSize = Math.Min(_linecount, MaxLines);
+                toolStripProgress.Value = Math.Min(Convert.ToInt32(FileProperties.BytesRead / (FileProperties.FileLen / 100)), 100);
                 Application.DoEvents();
             }
-            lvFile.VirtualListSize = _linecount;
+            lvFile.VirtualListSize = Math.Min(_linecount, MaxLines);       //ListView will only displayup to 100 million lines.
             toolStripLoadStatus.Text = string.Format("{0}: {1} lines read", bManualStop ? "Stopped" : "Done", _linecount);
             if (bFileLoaded && !bManualStop) { toolStripProgress.Value = 0; toolStripProgress.Visible = false; }
+            if (_linecount > MaxLines) ShowMessage(String.Format("This file exceeds {0} Million lines. Only the first {0} Million will be shown.", (MaxLines / 1000000).ToString()));
+
         }
 
         void LV_GetItem(object? sender, RetrieveVirtualItemEventArgs e)
