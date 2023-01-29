@@ -36,11 +36,11 @@
             this.txtHelp.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtHelp.Location = new System.Drawing.Point(0, 0);
             this.txtHelp.MaxLength = 0;
-            this.txtHelp.Multiline = true;
             this.txtHelp.Name = "txtHelp";
             this.txtHelp.ReadOnly = true;
             this.txtHelp.Size = new System.Drawing.Size(800, 450);
             this.txtHelp.TabIndex = 0;
+            this.txtHelp.Text = "";
             // 
             // Help
             // 
@@ -52,9 +52,9 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Large File Viewer Help";
+            this.Activated += new System.EventHandler(this.Help_Activated);
             this.Load += new System.EventHandler(this.Help_Load);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 

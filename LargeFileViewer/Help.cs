@@ -17,19 +17,27 @@ namespace LargeFileViewer
 
         private void Help_Load(object sender, EventArgs e)
         {
+            
+        }
+
+        private void Help_Activated(object sender, EventArgs e)
+        {
+            txtHelp.Text = "Please stand by...";
+            Application.DoEvents();
             HttpClient client = new HttpClient();
             string helpURI = "https://raw.githubusercontent.com/mdmadonna/LargeFileViewer/master/Help.rtf";
             try
             {
                 string responseBody = client.GetStringAsync(helpURI).Result;
-                txtHelp.Text = responseBody;
+                txtHelp.Clear();
+                txtHelp.Rtf = responseBody;
                 txtHelp.TabStop = false;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) 
             {
-                txtHelp.Text = ex.Message;
+                txtHelp.Text = string.Format("Help is currently unavailable.{0}{0}{1}", Environment.NewLine, ex.Message);
             }
-
+            client.Dispose();
         }
 
         protected override bool ProcessDialogKey(Keys keyData)
@@ -41,5 +49,6 @@ namespace LargeFileViewer
             }
             return base.ProcessDialogKey(keyData);
         }
+
     }
 }
