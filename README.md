@@ -12,4 +12,4 @@ Key points regarding the program:
 6. Searching requires that the entire file be read to find the data you're looking for.
 7. The program does not currently have update capabilities.
 
-
+Consider this a Beta release. I would appreciate feedback.
