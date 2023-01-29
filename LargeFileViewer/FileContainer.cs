@@ -95,7 +95,7 @@ namespace LargeFileViewer
 
         public static int TextLineAtOffset(long offset)
         {
-            return BinSearch(idx, offset);
+            return BinSearch(idx, offset) -1;
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace LargeFileViewer
         public static long GetOffset(int LineNumber)
         {
             if (LineNumber > idx.Count || LineNumber < 0) throw new ArgumentOutOfRangeException();
-            return idx[LineNumber+1].pos;
+            return idx[LineNumber].pos;
         }
 
         /// <summary>

@@ -546,8 +546,8 @@ namespace LargeFileViewer
             }
             else
             {
-                long offset = GetHexOffset(curline, HexLineLen);
-                curline = Math.Max(TextLineAtOffset(offset) - 1, 1);
+                long offset = GetHexOffset(curline-1, HexLineLen);
+                curline = TextLineAtOffset(offset);
                 toolStripLoadStatus.Text = string.Format("{0} lines available", fileViewer.RowCount);
                 fileViewer.Refresh();
                 fileViewer.EnsureVisible(curline);
