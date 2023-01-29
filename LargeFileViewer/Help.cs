@@ -10,6 +10,7 @@ namespace LargeFileViewer
 {
     public partial class Help : Form
     {
+        private bool _activated = false;
         public Help()
         {
             InitializeComponent();
@@ -22,6 +23,9 @@ namespace LargeFileViewer
 
         private void Help_Activated(object sender, EventArgs e)
         {
+            if (_activated) return;
+
+            _activated = true;
             txtHelp.Text = "Please stand by...";
             Application.DoEvents();
             HttpClient client = new HttpClient();
