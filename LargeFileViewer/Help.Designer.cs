@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.txtHelp = new System.Windows.Forms.TextBox();
+            this.txtHelp = new System.Windows.Forms.RichTextBox();
             this.SuspendLayout();
             // 
             // txtHelp
@@ -51,7 +51,7 @@
             this.Name = "Help";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.Text = "Help";
+            this.Text = "Large File Viewer Help";
             this.Load += new System.EventHandler(this.Help_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -60,6 +60,6 @@
 
         #endregion
 
-        private TextBox txtHelp;
+        private RichTextBox txtHelp;
     }
 }
