@@ -8,6 +8,7 @@
  **********************************************************************************************/
 
 using static LargeFileViewer.common;
+using static LargeFileViewer.FileContainer;
 
 namespace LargeFileViewer
 {

@@ -8,11 +8,14 @@
 using System.Text;
 
 using static LargeFileViewer.common;
+using static LargeFileViewer.FileContainer;
+using static LargeFileViewer.FileViewer;
 using static LargeFileViewer.OptionsManager;
 using static System.Environment;
 
 namespace LargeFileViewer
 {
+
     public partial class Main : Form
     {
         internal FileMonitor? fileMonitor;
@@ -20,29 +23,44 @@ namespace LargeFileViewer
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(ExHandler);
             InitializeComponent();
-            StartUpFont = lvFile.Font;
             OptionsManager.Initialize();
             UpdateMenu();
+            statusStrip.BackColor = Color.Empty;
             toolStripLoadStatus.Text = string.Empty;
             toolStripProgress.Visible = false;
+            toolStripProgress.BackColor = Color.Empty;
+            toolStripFileSize.Alignment = ToolStripItemAlignment.Right;
+            toolStripPos.Alignment = ToolStripItemAlignment.Right;
+            toolStripLine.Alignment = ToolStripItemAlignment.Right;
+            toolStripLine.TextAlign = ContentAlignment.MiddleLeft;
+            InitStatusStrip();
+
             Options.ListFontChanged += OnFontChanged;
-
-            lvFile.View = View.Details;
-            lvFile.VirtualMode = true;
-            if (defaultFont != null) lvFile.Font = defaultFont;
-
-            // Hook up handlers for VirtualMode events.
-            lvFile.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler(LV_GetItem);
-
-            // Placeholders for future use
-            //lvFile.CacheVirtualItems += new CacheVirtualItemsEventHandler(LV_CacheItems);
-            //lvFile.SearchForVirtualItem += new SearchForVirtualItemEventHandler(LV_FindItem);
-
+            
+            InitFileView();
+        }
+        private void InitFileView()
+        {
+            fileViewer.RetrieveItem += FV_GetItem;
+            fileViewer.SelectedPositionChanged += OnPositionChanged;
+            StartUpFont = fileViewer.Font;
+            if (defaultFont != null) fileViewer.Font = defaultFont;
         }
 
         #region eventhandlers
+
         /// <summary>
-        /// Executed if the default Font for the ListView changes.
+        /// Fired if the FileViewer is cleared
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        internal void OnCleared(object? sender, EventArgs e)
+        {
+            Clear();
+        }
+
+        /// <summary>
+        /// Executed if the default Font for the FileViewer changes.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -50,24 +68,35 @@ namespace LargeFileViewer
         {
             if (SelectedFont != null) return;
             Font newFont = defaultFont != null ? defaultFont : DefaultFont;
-            if (lvFile.InvokeRequired)
-            { lvFile.Invoke((MethodInvoker)delegate { lvFile.Font = newFont; }); }
+            if (fileViewer.InvokeRequired)
+            { fileViewer.Invoke((MethodInvoker)delegate { fileViewer.Font = newFont; }); }
             else
-            { lvFile.Font = newFont; }
+            { fileViewer.Font = newFont; }
         }
 
         /// <summary>
         /// If the file we're viewing or loading changes, this routine is fired and the 
-        /// ListView is invalidated.
+        /// FileViewer is invalidated.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         internal void OnFileChanged(object? sender, EventArgs e)
         {
-            if (lvFile.InvokeRequired)
-            { lvFile.Invoke((MethodInvoker)delegate { lvFile.Invalidate(); }); }
+            if (fileViewer.InvokeRequired)
+            { fileViewer.Invoke((MethodInvoker)delegate { fileViewer.Invalidate(); }); }
             else
-            { lvFile.Invalidate(); }
+            { fileViewer.Invalidate(); }
+        }
+
+        /// <summary>
+        /// This is fired when the cursor moves to a new line in the FileViewer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        internal void OnPositionChanged(object? sender, SelectedPositionChangeEventArgs e)
+        {
+            toolStripLine.Text = string.Format("Line: {0}", (e.Line + 1).ToString("N0"));
+            toolStripPos.Text = string.Format("Pos: {0}", (e.Position + 1).ToString());
         }
 
         /// <summary>
@@ -80,17 +109,13 @@ namespace LargeFileViewer
         {
             if (e.newline == 0) return;
             int linenum = e.newline - 1;
-            if (lvFile.InvokeRequired)
+            if (fileViewer.InvokeRequired)
             {
-                lvFile.Invoke((MethodInvoker)delegate { lvFile.EnsureVisible(linenum); });
-                lvFile.Invoke((MethodInvoker)delegate { lvFile.SelectedIndices.Clear(); });
-                lvFile.Invoke((MethodInvoker)delegate { lvFile.SelectedIndices.Add(linenum); });
+                fileViewer.Invoke((MethodInvoker)delegate { fileViewer.EnsureVisible(linenum); });
             }
             else
             {
-                lvFile.EnsureVisible(linenum);
-                lvFile.SelectedIndices.Clear();
-                lvFile.SelectedIndices.Add(linenum);
+                fileViewer.EnsureVisible(linenum);
             }
         }
 
@@ -103,7 +128,7 @@ namespace LargeFileViewer
         {
             bManualStop = true;
             Form? find = AppForm(FINDFORM);
-            if (find != null) { ((Find)find).bCancelSearch= true; }
+            if (find != null) { ((Find)find).Cancel(); }
 
             string errorMsg = "A fatal error has occurred." + Environment.NewLine;
             Exception ex = (Exception)e.ExceptionObject;
@@ -200,7 +225,7 @@ namespace LargeFileViewer
         {
             if (sender == null) return;
             string filename = ((ToolStripMenuItem)sender).Text;
-            if (!SetupFileProperties(filename))
+            if (!LoadFileInfo(filename))
             {
                 ShowMessage(string.Format("Can't open {0}.", filename));
                 return;
@@ -226,7 +251,7 @@ namespace LargeFileViewer
         /// <param name="e"></param>
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!OpenFile()) return;
+            if (!Open()) return;
             ProcessFile();
         }
 
@@ -275,10 +300,7 @@ namespace LargeFileViewer
         /// <param name="e"></param>
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var selectedindices = lvFile.SelectedIndices;
-            if (selectedindices.Count == 0) return;
-            var s = lvFile.Items[selectedindices[0]].SubItems[1].Text;
-            Clipboard.SetText(s);
+            if (!string.IsNullOrEmpty(fileViewer.SelectedText)) Clipboard.SetText(fileViewer.SelectedText);
         }
 
         /// <summary>
@@ -288,6 +310,11 @@ namespace LargeFileViewer
         /// <param name="e"></param>
         private void findToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (fileViewer.displayMode == DisplayMode.Hex)
+            {
+                ShowMessage("'Find' is not available while in Hex Mode.");
+                return;
+            }
             Form? f = AppForm(FINDFORM);
             if (f == null)
             {
@@ -336,10 +363,11 @@ namespace LargeFileViewer
                 return;
             }
             GoTo f = new GoTo();
+            f.MaxLineNumber = fileViewer.displayMode == DisplayMode.Text ? fileViewer.RowCount : fileViewer.HexRowCount;
             f.ShowDialog();
             int lineNum = f.LineNumber;
             f.Dispose();
-            if (lineNum > 0) lvFile.EnsureVisible(lineNum - 1);
+            if (lineNum > 0) fileViewer.EnsureVisible(lineNum - 1);
         }
 
         /// <summary>
@@ -362,7 +390,8 @@ namespace LargeFileViewer
         /// <param name="e"></param>
         private void hexToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("This feature is not yet implemented.", PROGRAMNAME, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            hexToolStripMenuItem.Checked = !hexToolStripMenuItem.Checked;
+            ChangeDisplayMode();
         }
 
         /// <summary>
@@ -373,9 +402,9 @@ namespace LargeFileViewer
         /// <param name="e"></param>
         private void fontToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!GetFont(lvFile.Font)) return;
-            lvFile.Font = SelectedFont;
-            lvFile.Invalidate();
+            if (!GetFont(fileViewer.Font)) return;
+            fileViewer.Font = SelectedFont;
+            fileViewer.Invalidate();
         }
 
         /// <summary>
@@ -423,9 +452,18 @@ namespace LargeFileViewer
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Form? f = AppForm(ABOUTFORM);
-            if (f == null) { f = new About(); PositionForm(f); }
+            if (f == null) { f = new AboutBox(); PositionForm(f); }
             f.Show();
             f.Activate();
+        }
+
+        private void utilizationToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form? f = AppForm(UTILFORM);
+            if (f == null) { f = new Stats(); PositionForm(f); }
+            f.Show();
+            f.Activate();
+
         }
 
         // Context Menu click Events
@@ -439,6 +477,8 @@ namespace LargeFileViewer
             closeFileStripMenuItem_Click(sender, e);
         }
         #endregion
+
+        #region UI
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Form? finder = AppForm(FINDFORM);
@@ -458,134 +498,11 @@ namespace LargeFileViewer
             bManualStop = true;
         }
 
-        public void ReloadFile()
-        {
-            string f = FileProperties.FileName;
-            ClearFile();
-            SetupFileProperties(f);
-            ProcessFile();
-        }
-
         /// <summary>
-        /// Reset file related variables and stop current activities
-        /// as needed.
+        /// Trap the Esc key and halt any ongoing file loads,
         /// </summary>
-        /// <param name="bClearCurrentFileInfo"></param>
-        public void ClearFile(bool bClearCurrentFileInfo = true)
-        {
-            this.Text = PROGRAMNAME;
-            if ((!bFileLoaded & !bManualStop))
-            {
-                bManualStop = true;
-                Thread.Sleep(500);
-            }
-            Form? finder = AppForm("Find");
-            if (finder != null)
-            {
-                finder.Close();
-                Thread.Sleep(500);
-            }
-            lvFile.VirtualListSize = 0;
-            toolStripLoadStatus.Text = string.Empty;
-            toolStripProgress.Value = 0;
-            if (bClearCurrentFileInfo) ClearCurrentFile();
-            if (fileMonitor != null)
-            {
-                fileMonitor.FileChanged -= OnFileChanged;
-                fileMonitor.Close();
-                fileMonitor = null;
-            }
-        }
-
-        /// <summary>
-        /// Start a Task to load the requested file.
-        /// </summary>
-        internal void ProcessFile()
-        {
-            // Stop any in-flight activities
-            ClearFile(false);
-
-            // Initialize appropriate variables and start background Load Task
-            this.Text = string.Format("{0} {1}", PROGRAMNAME, FileProperties.FileName);
-            OptionsManager.Add(FileProperties.FileName);
-            UpdateMenu();
-            bManualStop = false;
-            bFileLoaded = false;
-            bFileInvalid = false;
-            idx.Clear();
-            toolStripProgress.Visible = true;
-            fileMonitor = new FileMonitor();
-            fileMonitor.FileChanged += OnFileChanged;
-            if (SelectedFont != null) lvFile.Font = SelectedFont;
-            else
-            if (defaultFont != null) lvFile.Font = defaultFont;
-
-            Thread t = new Thread(FileIndex)
-            {
-                Name = "FileOpen",
-                Priority = ThreadPriority.AboveNormal
-            };
-            t.Start();
-
-            // Track status of the file load
-            Application.DoEvents();
-            while (!bFileLoaded & !bManualStop)
-            {
-                toolStripLoadStatus.Text = string.Format("Reading {0}", _linecount);
-                lvFile.VirtualListSize = Math.Min(_linecount, MaxLines);
-                toolStripProgress.Value = Math.Min(Convert.ToInt32(FileProperties.BytesRead / (FileProperties.FileLen / 100)), 100);
-                Application.DoEvents();
-            }
-            lvFile.VirtualListSize = Math.Min(_linecount, MaxLines);       //ListView will only displayup to 100 million lines.
-            toolStripLoadStatus.Text = string.Format("{0}: {1} lines read", bManualStop ? "Stopped" : "Done", _linecount);
-            if (bFileLoaded && !bManualStop) { toolStripProgress.Value = 0; toolStripProgress.Visible = false; }
-            if (_linecount > MaxLines) ShowMessage(String.Format("This file exceeds {0} Million lines. Only the first {0} Million will be shown.", (MaxLines / 1000000).ToString()));
-
-        }
-
-        void LV_GetItem(object? sender, RetrieveVirtualItemEventArgs e)
-        {
-            if (bFileInvalid)
-            {
-                e.Item = LV_ErrorItem(e.ItemIndex + 1);
-                return;
-            }
-
-            if (!idx.TryGetValue(e.ItemIndex + 1, out LineIndex? li))
-            {
-                throw new Exception(string.Format("Invalid Item Index : {0}", e.ItemIndex.ToString()));
-            }
-            FileStream fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fs.Seek(li.pos, SeekOrigin.Begin);
-            byte[] buff = new byte[li.len];
-            fs.Read(buff, 0, buff.Length);
-            fs.Close();
-            string line = Encoding.UTF8.GetString(buff);
-            ListViewItem lv = new ListViewItem((e.ItemIndex + 1).ToString());
-            lv.SubItems.Add(line);
-            e.Item = lv;
-        }
-        ListViewItem LV_ErrorItem(int eidx)
-        {
-            ListViewItem lv = new ListViewItem((eidx).ToString());
-            lv.SubItems.Add("The file has changed. Please reload it.");
-            return lv;
-        }
-
-        // Manages the cache.  ListView calls this when it might need a cache
-        // refresh. It is a placeholder only and may be used in the future.
-        void LV_CacheItems(object? sender, CacheVirtualItemsEventArgs e)
-        {
-        }
-
-        // This event handler is used for List search functionality. It is called
-        // for a search request when in Virtual mode. It is not very flexible so
-        // it is not currently in use.
-        void LV_FindItem(object? sender, SearchForVirtualItemEventArgs e)
-        {
-
-        }
-
+        /// <param name="keyData"></param>
+        /// <returns></returns>
         protected override bool ProcessDialogKey(Keys keyData)
         {
             if (keyData == Keys.Escape)
@@ -600,19 +517,247 @@ namespace LargeFileViewer
             }
             return base.ProcessDialogKey(keyData);
         }
-    }
-    public partial class newListView : ListView
-    {
-        public newListView()
+
+        #endregion
+
+        #region Internal Routines
+        private void ChangeDisplayMode()
         {
-            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
+            int curpos = fileViewer.SelectedPosition;
+            fileViewer.displayMode = hexToolStripMenuItem.Checked ? DisplayMode.Hex : DisplayMode.Text;
+            if (string.IsNullOrEmpty(FileProperties.FileName)) return;
+            if (fileViewer.displayMode == DisplayMode.Hex)
+            { TextToHex(curpos); }
+            else
+            { HexToText(curpos); }
+
+        }
+        private void HexToText(int curline)
+        {
+            // Reset the Viewer Font
+            if (SelectedFont != null) { fileViewer.Font = SelectedFont; }
+            else if (Options.DefaultFont != null) { fileViewer.Font = DefaultFont; }
+            else fileViewer.Font = StartUpFont;
+
+            // Force refresh of the Viewer
+            if (FileProperties.LineCount == 0)
+            { 
+                ProcessFile(); 
+            }
+            else
+            {
+                long offset = GetHexOffset(curline, HexLineLen);
+                curline = Math.Max(TextLineAtOffset(offset) - 1, 1);
+                toolStripLoadStatus.Text = string.Format("{0} lines available", fileViewer.RowCount);
+                fileViewer.Refresh();
+                fileViewer.EnsureVisible(curline - 1);
+            }
         }
 
-        private void InitializeComponent()
+        private void TextToHex(int curline)
         {
-            this.SuspendLayout();
-            this.ResumeLayout(false);
+            // Close Find Form as needed until it has been modified to accommodate
+            // Hex search.
+            Form? f = AppForm(FINDFORM);
+            if (f != null) ((Find)f).Close();
 
+            long offset = GetOffset(curline);
+            curline = HexLineAtOffset(offset, HexLineLen);
+            toolStripLoadStatus.Text = string.Format("{0} lines available", fileViewer.HexRowCount);
+
+            // Hex View requires a monospaced Font
+            fileViewer.Font = new Font(FontFamily.GenericMonospace, fileViewer.Font.Size);
+            fileViewer.Refresh();
+            fileViewer.EnsureVisible(curline);
         }
+
+        public void ReloadFile()
+        {
+            string f = FileProperties.FileName;
+            ClearFile();
+            LoadFileInfo(f);
+            ProcessFile();
+        }
+
+        /// <summary>
+        /// Reset file related variables and stop current activities
+        /// as needed.
+        /// </summary>
+        /// <param name="bClearCurrentFileInfo"></param>
+        public void ClearFile(bool bClearCurrentFileInfo = true)
+        {
+            // Reset the Main Window Caption
+            this.Text = PROGRAMNAME;
+
+            // If a file load is in progress, stop it.
+            if ((!bFileLoaded & !bManualStop))
+            {
+                bManualStop = true;
+                Thread.Sleep(500);
+            }
+
+            // Close an open Find Form as needed.
+            Form? finder = AppForm("Find");
+            if (finder != null)
+            {
+                finder.Close();
+                Thread.Sleep(500);
+            }
+
+            // Clear date out of the File Viewer
+            fileViewer.Clear();
+
+            // Re-initiialize the Status Bar
+            InitStatusStrip();
+
+            // Clear out all file related data and stop monitoring
+            // the file for changes/
+            if (bClearCurrentFileInfo) Clear();
+            if (fileMonitor != null)
+            {
+                fileMonitor.FileChanged -= OnFileChanged;
+                fileMonitor.Close();
+                fileMonitor = null;
+            }
+        }
+
+        /// <summary>
+        /// Clear values out of the StatusBar
+        /// </summary>
+        private void InitStatusStrip()
+        {
+            toolStripLoadStatus.Text = string.Empty;
+            toolStripLine.Text = string.Empty;
+            toolStripPos.Text = string.Empty;
+            toolStripFileSize.Text = string.Empty;
+            toolStripProgress.Value = 0;
+            toolStripProgress.Visible = false;
+        }
+
+        /// <summary>
+        /// Start a Task to load the requested file.
+        /// </summary>
+        internal void ProcessFile()
+        {
+            // Stop any in-flight activities
+            ClearFile(false);
+            fileViewer.FileSize = FileProperties.FileLen;
+
+            // Initialize appropriate variables and start background Load Task
+            this.Text = string.Format("{0} {1}", PROGRAMNAME, FileProperties.FileName);
+            OptionsManager.Add(FileProperties.FileName);
+            UpdateMenu();
+            bManualStop = false;
+            bFileLoaded = false;
+            bFileInvalid = false;
+            idx.Clear();
+            toolStripProgress.Visible = true;
+            toolStripFileSize.Text = string.Format("File Size: {0}", FileProperties.FileLen.ToString("N0"));
+            fileMonitor = new FileMonitor();
+            fileMonitor.FileChanged += OnFileChanged;
+
+            if (fileViewer.displayMode == DisplayMode.Hex)
+            {
+                fileViewer.Font = new Font(FontFamily.GenericMonospace, fileViewer.Font.Size);
+                toolStripProgress.Visible = false;
+                toolStripLoadStatus.Text = string.Format("{0} lines available", fileViewer.HexRowCount);
+                return;
+            }
+
+            if (SelectedFont != null) fileViewer.Font = SelectedFont;
+            else
+            if (defaultFont != null) fileViewer.Font = defaultFont;
+            Application.DoEvents();
+
+            Thread t = new Thread(IndexFile)
+            {
+                Name = "FileOpen",
+                Priority = ThreadPriority.AboveNormal
+            };
+            t.Start();
+
+            // Track status of the file load
+            while (!bFileLoaded & !bManualStop)
+            {
+                toolStripLoadStatus.Text = string.Format("Reading {0}", _linecount);
+                fileViewer.RowCount = _linecount;
+                toolStripProgress.Value = ((FileProperties.FileLen / 100) == 0) ? 100 : Math.Min(Convert.ToInt32(FileProperties.BytesRead / (FileProperties.FileLen / 100)), 100);
+                Application.DoEvents();
+            }
+            fileViewer.RowCount = _linecount;
+            toolStripLoadStatus.Text = string.Format("{0}: {1} lines read", bManualStop ? "Stopped" : "Done", _linecount);
+            if (bFileLoaded && !bManualStop) { toolStripProgress.Value = 0; toolStripProgress.Visible = false; }
+            fileViewer.Refresh();
+            Application.DoEvents();
+            GC.Collect();
+        }
+
+        void FV_GetItem(object? sender, RetrieveItemEventArgs e)
+        {
+            if (bFileInvalid)
+            {
+                e.value = "Error - File has been Modified.";
+                return;
+            }
+            if (e.displayMode == DisplayMode.Hex) { FV_GetHexItem(e); return; }
+
+            LineIndex li = new();
+            if (!idx.TryGetValue(e.line + 1, out li))
+            {
+                throw new Exception(string.Format("Invalid Item Index : {0}", e.line.ToString()));
+            }
+
+            FileStream fs;
+            try
+            {
+                fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                fs.Seek(li.pos, SeekOrigin.Begin);
+                byte[] buff = new byte[li.len];
+                fs.Read(buff, 0, buff.Length);
+                fs.Close();
+                e.value = Encoding.UTF8.GetString(buff);
+            }
+            catch(Exception ex)
+            {
+                ShowMessage(string.Format("Error Reading file.{0}{1}{0}{2}", Environment.NewLine, ex.Message, "Terminating Program."));
+                Application.Exit();
+            }
+        }
+
+        //  Translate the line to hex
+        void FV_GetHexItem(RetrieveItemEventArgs e)
+        {
+            long position = e.line * (long)HexLineLen;
+            FileStream fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            fs.Seek(position, SeekOrigin.Begin);
+            byte[] buff = new byte[HexLineLen];
+            int bytesread = fs.Read(buff, 0, buff.Length);
+            fs.Close();
+            StringBuilder sb = new();
+            sb.Append("0x").Append(Convert.ToString(long.Parse(position.ToString()), 16).PadLeft(8, '0'));
+            sb.Append("   ");
+            string HexString = Convert.ToHexString(buff, 0, bytesread);
+            int i;
+            for (i = 1; i <= HexString.Length; i++)
+            {
+                sb.Append(HexString[i - 1]);
+                if (i % 8 == 0)
+                {
+                    sb.Append(" ");
+                    if (i % 32 == 0) sb.Append(" ");
+                }
+            }
+            sb.Append(new string(' ', (int)TotHexLineLen - sb.Length));
+
+            for (int k = 0; k < bytesread; k++)
+            {
+                sb.Append(CharMap[buff[k]]);
+            }
+            e.value = sb.ToString();
+        }
+        #endregion
+
+
+
     }
 }

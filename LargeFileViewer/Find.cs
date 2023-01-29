@@ -9,15 +9,21 @@ using System.Collections;
 using System.Text;
 
 using static LargeFileViewer.common;
+using static LargeFileViewer.FileContainer;
 
 namespace LargeFileViewer
 {
     public partial class Find : Form
     {
+        /// <summary>
+        /// true while the file is being searched, otherwise false 
+        /// </summary>
         public bool bSearching { get; set; }
-        public bool bCancelSearch { get; set; }
-        public bool bFormClosing { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        
         /// <summary>
         /// Array of line numbers containg the string being found. flist is the underlying data 
         /// store and FoundList is a synchronized wrapper used to access flist in a thread
@@ -49,6 +55,9 @@ namespace LargeFileViewer
         string searchText = string.Empty;
         bool bMatchCase;
         int searchcount = 0;
+        private bool bCancelSearch;
+        private bool bFormClosing;
+
 
         /// <summary>
         /// Constructor to initialize variables used in the search.
@@ -60,6 +69,15 @@ namespace LargeFileViewer
             flist = new();
             FoundList = ArrayList.Synchronized(flist);
             FoundPos = 0;
+        }
+
+        /// <summary>
+        /// Cancel an omgoing search.
+        /// </summary>
+        public void Cancel()
+        {
+            if (bSearching) bCancelSearch = true;
+            Thread.Sleep(500);          // Future: Change this wait for the Task to complete.
         }
 
         private void Find_Load(object sender, EventArgs e)
@@ -98,6 +116,7 @@ namespace LargeFileViewer
                 StartFind();
                 return;
             }
+
             if (FoundPos >= FoundList.Count)
             {
                 lblMsg.Text = string.Format("No more items found. {0}", bSearching ? "Still Looking..." : "Reached end of file.");
@@ -124,19 +143,13 @@ namespace LargeFileViewer
         }
 
         /// <summary>
-        /// Cancel any ongoing search and execute a short wait.
+        /// Cancel any ongoing search.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            // The Cancel button should only enabled while a search is underway so the
-            // if stmt is here only for clarity.
-            if (bSearching)
-            {
-                bCancelSearch = true;
-                Thread.Sleep(500);          // Future: Change this wait for the Task to complete.
-            }
+            Cancel();
         }
 
         public enum SearchDirection
@@ -213,7 +226,7 @@ namespace LargeFileViewer
                 toolStripStatus.Text = string.Format("{0} of {1}", searchcount, idx.Count);
                 matchCount = (FoundList != null) ? FoundList.Count : 0;
                 if (matchCount != 0) toolStripResults.Text = string.Format("{0} matches", matchCount.ToString());
-                toolStripProgress.Value = Math.Min(Convert.ToInt32(searchcount / (Math.Min(FileProperties.LineCount, MaxLines) / 100)), 100);
+                toolStripProgress.Value = Convert.ToInt32(searchcount / FileProperties.LineCount) / 100;
                 if (FoundPos != 0) toolStripPosition.Text = string.Format("{0} of {1}", FoundPos, matchCount.ToString());
                 if (FoundPos == 0 && matchCount > 0)
                 {
@@ -246,7 +259,7 @@ namespace LargeFileViewer
         private void SearchTask()
         {
             long StartPos = 0;
-            long EndPos = Math.Min(FileProperties.LineCount, MaxLines);
+            long EndPos = FileProperties.LineCount;
             int startidx = 1;
             FoundList.Clear();
 
