@@ -106,8 +106,8 @@ namespace LargeFileViewer
         /// <returns></returns>
         private static int BinSearch(Dictionary<int, LineIndex> idx, long offset)
         {
-            int first = 0;
-            int last = idx.Count - 1;
+            int first = 1;
+            int last = idx.Count;
             int mid = 0;
             while (first <= last)
             {

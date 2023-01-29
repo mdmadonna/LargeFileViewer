@@ -523,13 +523,13 @@ namespace LargeFileViewer
         #region Internal Routines
         private void ChangeDisplayMode()
         {
-            int curpos = fileViewer.SelectedPosition;
+            int currentLine = fileViewer.FirstVisibleLine;
             fileViewer.displayMode = hexToolStripMenuItem.Checked ? DisplayMode.Hex : DisplayMode.Text;
             if (string.IsNullOrEmpty(FileProperties.FileName)) return;
             if (fileViewer.displayMode == DisplayMode.Hex)
-            { TextToHex(curpos); }
+            { TextToHex(currentLine); }
             else
-            { HexToText(curpos); }
+            { HexToText(currentLine); }
 
         }
         private void HexToText(int curline)
@@ -550,7 +550,7 @@ namespace LargeFileViewer
                 curline = Math.Max(TextLineAtOffset(offset) - 1, 1);
                 toolStripLoadStatus.Text = string.Format("{0} lines available", fileViewer.RowCount);
                 fileViewer.Refresh();
-                fileViewer.EnsureVisible(curline - 1);
+                fileViewer.EnsureVisible(curline);
             }
         }
 

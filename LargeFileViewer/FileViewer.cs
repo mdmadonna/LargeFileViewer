@@ -82,7 +82,11 @@ namespace LargeFileViewer
         /// Get Selected Text from the File Viewer.
         /// </summary>
         public string SelectedText { get { return textViewer.Text.Substring(textViewer.SelectionStart, textViewer.SelectionLength); } }
-        
+
+        public int FirstVisibleLine { get { return vScrollBar.Value + 1; } }
+
+        public int LastVisibleLine { get { return Math.Min(_maxrows, vScrollBar.Value + LineCount + 1); } }
+
         /// <summary>
         /// Current number of visible rows
         /// </summary>
