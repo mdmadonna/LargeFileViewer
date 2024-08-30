@@ -5,7 +5,7 @@
  *  Copyright 2023 © AJM Software L.L.C.
  **********************************************************************************************/
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 
 namespace LargeFileViewer
 {

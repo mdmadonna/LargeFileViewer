@@ -7,7 +7,7 @@
  *  Copyright 2023 © AJM Software L.L.C.
  **********************************************************************************************/
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 using static LargeFileViewer.FileContainer;
 
 namespace LargeFileViewer
@@ -23,9 +23,10 @@ namespace LargeFileViewer
         public FileMonitor()
         {
             if (FileProperties.FilePath == null) { return; }
-            watcher = new FileSystemWatcher(FileProperties.FilePath);
-
-            watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size;
+            watcher = new FileSystemWatcher(FileProperties.FilePath)
+            {
+                NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
+            };
 
             watcher.Changed += OnChanged;
             watcher.Deleted += OnDeleted;
@@ -92,7 +93,7 @@ namespace LargeFileViewer
         {
             StopFileLoad();
             Exception ex = e.GetException();
-            MessageBox.Show(string.Format("Error: {0}.{1}Processing terminated.", ex.Message), PROGRAMNAME, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(string.Format("Error: {0}.{1}Processing terminated.", ex.Message, Environment.NewLine), PROGRAMNAME, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace LargeFileViewer
             if (watcher != null) watcher.EnableRaisingEvents = false;
             bFileInvalid = true;
             if ((!bFileLoaded & !bManualStop)) bManualStop = true;
-            if (FileChanged != null) FileChanged.Invoke(null, EventArgs.Empty);
+            FileChanged?.Invoke(null, EventArgs.Empty);
         }
     }
 }

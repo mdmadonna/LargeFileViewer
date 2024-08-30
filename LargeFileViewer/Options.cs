@@ -5,7 +5,7 @@
  *  Copyright 2023 © AJM Software L.L.C.
  **********************************************************************************************/
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 using static LargeFileViewer.OptionsManager;
 
 namespace LargeFileViewer
@@ -60,7 +60,7 @@ namespace LargeFileViewer
             optionsdata.MaxFiles = (int)numMaxRecent.Value;
             defaultFont = curFont;
             lblStatus.Text = WriteOptions() ? "Options Saved" : "Options not saved";
-            if (ListFontChanged != null) ListFontChanged.Invoke(null, EventArgs.Empty);
+            ListFontChanged?.Invoke(null, EventArgs.Empty);
         }
 
         private void btnExit_Click(object sender, EventArgs e)

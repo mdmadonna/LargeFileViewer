@@ -8,7 +8,7 @@
 using System.Collections;
 using System.Text;
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 using static LargeFileViewer.FileContainer;
 
 namespace LargeFileViewer
@@ -34,7 +34,7 @@ namespace LargeFileViewer
         /// needed.  A multi-threaded search is an option under consideration so the synchronized 
         /// wrapper will continue to be used.
         /// </summary>
-        ArrayList flist;
+        readonly ArrayList flist;
         public ArrayList FoundList;
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace LargeFileViewer
         {
             InitializeComponent();
             bFormClosing = false;
-            flist = new();
+            flist = [];
             FoundList = ArrayList.Synchronized(flist);
             FoundPos = 0;
         }
@@ -190,7 +190,9 @@ namespace LargeFileViewer
             lblMsg.Text = string.Empty;
             var v = (FoundList != null) ? FoundList[pos - 1] : 0;
             if (FoundPos != 0) toolStripPosition.Text = string.Format("{0} of {1}", FoundPos, fCount.ToString());
+#pragma warning disable IDE0017 // Simplify object initialization
             FoundEventArgs fargs = new();
+#pragma warning restore IDE0017 // Simplify object initialization
             fargs.newline = (v != null) ? (int)v : 0;
             Found.Invoke(null, fargs);
         }
@@ -214,7 +216,7 @@ namespace LargeFileViewer
             searchcount = 0;
             int matchCount = 0;
 
-            Thread t = new Thread(SearchTask)
+            Thread t = new(SearchTask)
             {
                 Name = "FileSearch",
                 Priority = ThreadPriority.Normal
@@ -273,7 +275,7 @@ namespace LargeFileViewer
                 fs.Read(buff, 0, buff.Length);
                 string line = Encoding.UTF8.GetString(buff);
                 if (!bMatchCase) line = line.ToLower();
-                if (line.IndexOf(searchText) >= 0) FoundList.Add(i);
+                if (line.Contains(searchText, StringComparison.CurrentCulture)) FoundList.Add(i);
                 if (i >= EndPos || bCancelSearch) break;
                 i++;
                 searchcount++;
@@ -291,7 +293,7 @@ namespace LargeFileViewer
         /// <returns></returns>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            KeyEventArgs e = new KeyEventArgs(keyData);
+            KeyEventArgs e = new(keyData);
             if (e.KeyCode == Keys.F3)
             {
                 object sender = new();

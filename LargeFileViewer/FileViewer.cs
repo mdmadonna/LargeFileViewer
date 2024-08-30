@@ -95,7 +95,7 @@ namespace LargeFileViewer
         /// <summary>
         /// Map of characters displayed in the text area of the hex display.
         /// </summary>
-        public string[] CharMap { get; set; }
+        public string[]? CharMap { get; set; }
 
         // Number of Hex Characers to display
         public static int HexLineLen { get; private set; }
@@ -115,7 +115,7 @@ namespace LargeFileViewer
 
         // Kluge to determine number of lines that can be currently displayed in the file
         // viewer
-        private RichTextBox dummyRTB = new();
+        private readonly RichTextBox dummyRTB = new();
 
         /// <summary>
         /// Constructor.
@@ -138,7 +138,7 @@ namespace LargeFileViewer
 
             vScrollBar.Visible = false;
 
-            CharMap = new string[] { };
+            // = Array.Empty<string>();
             
             // Set up parms for Hex Display. Everything keys off of HexLineLen. If thie 
             // becomes an updateable option, make sure it is divisible by 16.
@@ -163,7 +163,7 @@ namespace LargeFileViewer
         {
             //***********************************************************
             //
-            // Could not find an accurate wat of computing the total number 
+            // Could not find an accurate way of computing the total number 
             // of lines visible in the File Viewer. No combination of logic
             // using font size or height would come up with a correct answer
             // so this kluge was developed.  Hopefully I can find a better
@@ -192,12 +192,12 @@ namespace LargeFileViewer
             dummyRTB.WordWrap= false;
 
             StringBuilder sb = new();
-            sb.Append("A").AppendLine();
+            sb.Append('A').AppendLine();
             int i = 0;
             while (true)
             {
                 i++;
-                sb.Append("A").AppendLine();
+                sb.Append('A').AppendLine();
                 if (i > 200) break;
             }
             dummyRTB.Text = sb.ToString();
@@ -215,7 +215,7 @@ namespace LargeFileViewer
             {
                 vScrollBar.Maximum = _rowcount;
                 _maxrows = rowcount;
-                if (textViewer.Lines.Count() < _linecount) RedrawView(vScrollBar.Value);
+                if (textViewer.Lines.Length < _linecount) RedrawView(vScrollBar.Value);
             }
         }
 
@@ -257,8 +257,10 @@ namespace LargeFileViewer
             // followed by a NewLine sequence.  After we retrieve enough lines to
             // fill the visible area of the FileViewer, populate the Viewer with the
             // data we retrieved.
-            RetrieveItemEventArgs e = new RetrieveItemEventArgs();
-            e.displayMode = _displaymode;
+            RetrieveItemEventArgs e = new()
+            {
+                displayMode = _displaymode
+            };
             StringBuilder sb = new();
             StringBuilder lsb = new();
             for (int i = 0; i < LineCount; i++)
@@ -277,7 +279,7 @@ namespace LargeFileViewer
         /// Move the cursor to a specific location in the File Viewer.
         /// </summary>
         /// <param name="position">Location of the cursor.</param>
-        private void SetPosition(int position)
+        private static void SetPosition(int position)
         {
             if (position < 0) return;
         }
@@ -358,7 +360,7 @@ namespace LargeFileViewer
         private void clearToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Clear();
-            if (Cleared != null) Cleared.Invoke(this, EventArgs.Empty);
+            Cleared?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -372,7 +374,7 @@ namespace LargeFileViewer
         {
             if (_rowcount > 0)
             {
-                KeyEventArgs e = new KeyEventArgs(keyData);
+                KeyEventArgs e = new(keyData);
 
                 switch (e.KeyCode)
                 {
@@ -454,15 +456,11 @@ namespace LargeFileViewer
         private void text_MouseWheel(object? sender, System.Windows.Forms.MouseEventArgs e)
         {
             int linecount = (e.Delta * SystemInformation.MouseWheelScrollLines / 120) * -1;
-            switch (linecount)
+            vScrollBar.Value = linecount switch
             {
-                case < 0:
-                    vScrollBar.Value = Math.Max(vScrollBar.Value + linecount, vScrollBar.Minimum);
-                    break;
-                default:
-                    vScrollBar.Value = Math.Min(vScrollBar.Value + linecount, vScrollBar.Maximum - 1);
-                    break;
-            }
+                < 0 => Math.Max(vScrollBar.Value + linecount, vScrollBar.Minimum),
+                _ => Math.Min(vScrollBar.Value + linecount, vScrollBar.Maximum - 1),
+            };
         }
 
         /// <summary>
@@ -479,9 +477,11 @@ namespace LargeFileViewer
             int index = rtb.SelectionStart;
             int line = rtb.GetLineFromCharIndex(index);
             int idx = rtb.GetFirstCharIndexFromLine(line);
-            SelectedPositionChangeEventArgs se = new();
-            se.Line = line + vScrollBar.Value; 
-            se.Position= index - idx;
+            SelectedPositionChangeEventArgs se = new()
+            {
+                Line = line + vScrollBar.Value,
+                Position = index - idx
+            };
             SelectedPositionChanged.Invoke(sender, se);
         }
 

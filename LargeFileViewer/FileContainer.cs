@@ -1,7 +1,7 @@
 ﻿
 using System.Collections.Concurrent;
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 
 
 namespace LargeFileViewer
@@ -55,6 +55,7 @@ namespace LargeFileViewer
         internal static string _filename = string.Empty;
         internal static long _filelen;
         internal static FileEndingType _fileEndingType;
+        internal static int _preambleLength;
         internal static DateTime _createdate;
         internal static DateTime _modifieddate;
         internal static DateTime _accesseddate;
@@ -68,7 +69,7 @@ namespace LargeFileViewer
         internal static long _bytesread;
 
         // Index of all lines within the file.
-        internal static Dictionary<int, LineIndex> idx = new();
+        internal static Dictionary<int, LineIndex> idx = [];
         internal static bool bManualStop;       // Used to stop loading a file
         internal static bool bFileLoaded;       // Set to true when the file is completely loaded.
         internal static bool bFileInvalid;      // Set to true if the file is changed while loaded in the viewer
@@ -149,7 +150,7 @@ namespace LargeFileViewer
         {
             string filePath = string.Empty;
 
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            using (OpenFileDialog openFileDialog = new())
             {
                 openFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
                 openFileDialog.FilterIndex = 2;
@@ -167,7 +168,7 @@ namespace LargeFileViewer
         /// <returns></returns>
         public static bool LoadFileInfo(string fName)
         {
-            FileInfo fi = new FileInfo(fName);
+            FileInfo fi = new(fName);
             if (!fi.Exists) return false;
             _filename = fName;
             _filelen = fi.Length;
@@ -182,26 +183,39 @@ namespace LargeFileViewer
             _hidden = (fi.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden;
             _linecount = 0;
             _bytesread = 0;
-            if (!GetFileEnding(fName, out _fileEndingType)) return false;
+            if (!GetFileEnding(fName, out _fileEndingType, out _preambleLength)) return false;
             return true;
         }
 
         /// <summary>
-        /// Read the file being viewed and record the position of each line in the file.
-        /// This is run as a background task.
+        /// Determine if the file is a Windows or Unix compatible text file
+        /// and detect if a BOM is present.
         /// </summary>
-        private static bool GetFileEnding(string fName, out FileEndingType fsType)
+        private static bool GetFileEnding(string fName, out FileEndingType fsType, out int preambleLen)
         {
             fsType = FileEndingType.unknown;
-            string? line = string.Empty;
+            string? line;
+            preambleLen = 0;
             try
             {
-                StreamReader sr = new StreamReader(_filename);
+                StreamReader sr = new(fName);
                 line = sr.ReadLine();
+                var preamble = sr.CurrentEncoding.GetPreamble();
                 sr.Close();
                 FileStream fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                fs.Seek(string.IsNullOrEmpty(line) ? 0 : line.Length, SeekOrigin.Begin);
-                byte[] buff = new byte[2];
+                byte[] buff;
+                if (preamble.Length > 0)
+                {
+                    buff = new byte[preamble.Length];
+                    int pLen = fs.Read(buff, 0, buff.Length);
+                    if (pLen == preamble.Length)
+                    {
+                        if (buff == preamble) preambleLen = preamble.Length;
+                        if (buff.SequenceEqual(preamble)) preambleLen = preamble.Length;
+                    }
+                }
+                fs.Seek(string.IsNullOrEmpty(line) ? 0 : line.Length + preambleLen, SeekOrigin.Begin);
+                buff = new byte[2];
                 int bytecount = fs.Read(buff, 0, buff.Length);
                 fs.Close();
                 // if 0 or 1 byte is returned, we have an empty file or a file that is
@@ -226,16 +240,16 @@ namespace LargeFileViewer
         /// Read the file being viewed and record the position of each line in the file.
         /// This is run as a background task.
         /// </summary>
-        internal static void IndexFile()
+        internal static void IndexFile1()
         {
             int linenum = 0;                
             _linecount = 0;                     // Do not remove
-            long curPos = 0;
+            long curPos = _preambleLength;
             string? line = string.Empty;
             int eCount = _fileEndingType == FileEndingType.windows ? 2 : 1;
             try
             {
-                using (StreamReader sr = new StreamReader(_filename))
+                using (StreamReader sr = new(_filename))
                 {
                     while ((line = sr.ReadLine()) != null && !bManualStop)
                     {
@@ -260,5 +274,68 @@ namespace LargeFileViewer
             bFileLoaded = true;
         }
 
+        /// <summary>
+        /// Read the file being viewed and record the position of each line in the file.
+        /// This is run as a background task.
+        /// </summary>
+        internal static void IndexFile()
+        {
+            int linenum = 0;
+            _linecount = 0;                     // Do not remove
+            _bytesread = 0;
+            int buflines;
+            int eCount = _fileEndingType == FileEndingType.windows ? 2 : 1;
+            try
+            {
+                FileStream fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                byte[] buff = new byte[1024 * 256];
+                int pLen = fs.Read(buff, 0, buff.Length);
+                int index = _preambleLength;
+                while (pLen > 0)
+                {
+                    List<int> lines = LineCount(ref buff, pLen, _fileEndingType);
+                    buflines = lines.Count;
+                    for (int i = 0; i < buflines; i++)
+                    {
+                        LineIndex li = new()
+                        {
+                            pos = index + _bytesread,
+                            len = lines.ElementAt(i) - index
+                        };
+                        linenum++;
+                        index = lines.ElementAt(i) + eCount;
+                        idx.TryAdd(linenum, li);
+                        _linecount = linenum;           // Make sure this happens after TryAdd completes
+                    }
+                    _bytesread += pLen;
+                    index = (pLen - lines.ElementAt(lines.Count - 1) - eCount) * -1;
+                    pLen = fs.Read(buff, 0, buff.Length);
+                }
+                fs.Close();
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(string.Format("Unable to read the entire file.{0}Error: {1}", Environment.NewLine, ex.Message));
+            }
+            bFileLoaded = true;
+        }
+
+        /// <summary>
+        /// Run through the file buffer looking for newline characters.  In this case, 
+        /// we are looking for x'0D' only which will accommodate both unix and windows.
+        /// </summary>
+        /// <param name="buff"></param>
+        /// <returns></returns>
+        public static List<int> LineCount(ref byte[] buff, int buflen, FileEndingType ft)
+        {
+            List<int> lines = [];
+            int tgt = ft == FileEndingType.windows ? 13 : 10;
+            for (int i = 0; i < buflen; i++) 
+            { 
+                if (buff[i] == tgt) lines.Add(i);
+            }
+            return lines;
+        }
     }
 }
+

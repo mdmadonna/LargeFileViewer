@@ -51,8 +51,10 @@
             // 
             // textViewer
             // 
+            this.textViewer.BackColor = System.Drawing.SystemColors.Window;
             this.textViewer.ContextMenuStrip = this.contextMenuStrip1;
             this.textViewer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textViewer.ForeColor = System.Drawing.SystemColors.WindowText;
             this.textViewer.Location = new System.Drawing.Point(70, 0);
             this.textViewer.Name = "textViewer";
             this.textViewer.Size = new System.Drawing.Size(806, 234);

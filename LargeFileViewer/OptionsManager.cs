@@ -9,7 +9,7 @@
 
 using System.Text.Json;
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 using static System.Environment;
 
 namespace LargeFileViewer
@@ -38,7 +38,7 @@ namespace LargeFileViewer
         public static OptionsData optionsdata = new();
         // Mutex used to obtain a system wide lock on the options file during
         // read/write operations.
-        private static Mutex mutex = new Mutex(false, LFVMUTEX);
+        private static readonly Mutex mutex = new(false, LFVMUTEX);
         static string optfilename = string.Empty;
         public static Font? defaultFont { get; set; }
 
@@ -56,7 +56,7 @@ namespace LargeFileViewer
                 try
                 {
                     if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                    StreamWriter sw = new StreamWriter(optfilename);
+                    StreamWriter sw = new(optfilename);
                     sw.Close();
                 }
                 catch (Exception ex)
@@ -84,9 +84,7 @@ namespace LargeFileViewer
             // Set up the default font. Ignore any errors.
             try
             {
-                Single fontSize = 0;
-                Single.TryParse(optionsdata.FontSize, out fontSize);
-                if (fontSize == 0) fontSize = 9;
+                if (!Single.TryParse(optionsdata.FontSize, out Single fontSize)) fontSize = 9;
                 string fontStyle = string.IsNullOrEmpty(optionsdata.FontStyle) ? "Regular" : optionsdata.FontStyle;
                 int value = (int)Enum.Parse(typeof(FontStyle), fontStyle);
                 string fontName = string.IsNullOrEmpty(optionsdata.FontName) ? string.Empty : optionsdata.FontName;
@@ -104,9 +102,9 @@ namespace LargeFileViewer
         /// <returns></returns>
         internal static bool WriteOptions()
         {
-            optionsdata.FontName = defaultFont == null ? null : defaultFont.Name;
-            optionsdata.FontSize = defaultFont == null ? null : defaultFont.Size.ToString();
-            optionsdata.FontStyle = defaultFont == null ? null : defaultFont.Style.ToString();
+            optionsdata.FontName = defaultFont?.Name;
+            optionsdata.FontSize = defaultFont?.Size.ToString();
+            optionsdata.FontStyle = defaultFont?.Style.ToString();
 
             string optdata = JsonSerializer.Serialize<OptionsData>(optionsdata);
             if (mutex.WaitOne(1000))
@@ -129,7 +127,7 @@ namespace LargeFileViewer
         /// <param name="filename"></param>
         internal static void Add(string filename)
         {
-            if (optionsdata.MRUFiles == null) optionsdata.MRUFiles = new();
+            optionsdata.MRUFiles ??= [];
             for (int i = 0; i < optionsdata.MRUFiles.Count; i++)
             {
                 if (optionsdata.MRUFiles[i] == filename)

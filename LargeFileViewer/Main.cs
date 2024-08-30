@@ -7,7 +7,7 @@
 
 using System.Text;
 
-using static LargeFileViewer.common;
+using static LargeFileViewer.Common;
 using static LargeFileViewer.FileContainer;
 using static LargeFileViewer.FileViewer;
 using static LargeFileViewer.OptionsManager;
@@ -67,7 +67,7 @@ namespace LargeFileViewer
         internal void OnFontChanged(object? sender, EventArgs e)
         {
             if (SelectedFont != null) return;
-            Font newFont = defaultFont != null ? defaultFont : DefaultFont;
+            Font newFont = defaultFont ?? DefaultFont;
             if (fileViewer.InvokeRequired)
             { fileViewer.Invoke((MethodInvoker)delegate { fileViewer.Font = newFont; }); }
             else
@@ -153,14 +153,14 @@ namespace LargeFileViewer
         /// Write a line to the error log
         /// </summary>
         /// <param name="errorMsg"></param>
-        internal void WriteErrorLog(string errorMsg)
+        internal static void WriteErrorLog(string errorMsg)
         {
             var commonpath = GetFolderPath(SpecialFolder.CommonApplicationData);
             string dir = Path.Combine(commonpath, "ajmsoft\\LargeFileViewer");
             string logfilename = Path.Combine(dir, LOGFILENAME);
             try
             {
-                using (StreamWriter sw = new StreamWriter(logfilename, true))
+                using (StreamWriter sw = new(logfilename, true))
                 {
                     sw.WriteLine(string.Format("{0}|{1}", DateTime.Now, errorMsg));
                 }
@@ -187,7 +187,7 @@ namespace LargeFileViewer
                 if (fileToolStripMenuItem.DropDownItems == null) return;
                 if (fileToolStripMenuItem.DropDownItems[idx].Tag != null)
                 {
-                    if (fileToolStripMenuItem.DropDownItems[idx].Tag.ToString() == "RecentFile")
+                    if (fileToolStripMenuItem.DropDownItems[idx].Tag!.ToString() == "RecentFile")
                     {
                         fileToolStripMenuItem.DropDownItems[idx].Click -= recentFileToolStripMenuItem_Click;
                         fileToolStripMenuItem.DropDownItems.RemoveAt(idx);
@@ -199,7 +199,7 @@ namespace LargeFileViewer
             for (i = 0; i < optionsdata.MRUFiles.Count; i++)
             {
                 int idx = optionsdata.MRUFiles.Count - (i + 1);
-                ToolStripMenuItem tsRecent = new ToolStripMenuItem(optionsdata.MRUFiles[idx]);
+                ToolStripMenuItem tsRecent = new(optionsdata.MRUFiles[idx]);
                 tsRecent.Click += recentFileToolStripMenuItem_Click;
                 tsRecent.Tag = "RecentFile";
                 fileToolStripMenuItem.DropDownItems.Add(tsRecent);
@@ -224,7 +224,7 @@ namespace LargeFileViewer
         private void recentFileToolStripMenuItem_Click(object? sender, EventArgs? e)
         {
             if (sender == null) return;
-            string filename = ((ToolStripMenuItem)sender).Text;
+            string filename = ((ToolStripMenuItem)sender).Text!;
             if (!LoadFileInfo(filename))
             {
                 ShowMessage(string.Format("Can't open {0}.", filename));
@@ -362,8 +362,10 @@ namespace LargeFileViewer
                 ShowMessage("Please open a file before using this feature.");
                 return;
             }
-            GoTo f = new GoTo();
-            f.MaxLineNumber = fileViewer.displayMode == DisplayMode.Text ? fileViewer.RowCount : fileViewer.HexRowCount;
+            GoTo f = new()
+            {
+                MaxLineNumber = fileViewer.displayMode == DisplayMode.Text ? fileViewer.RowCount : fileViewer.HexRowCount
+            };
             f.ShowDialog();
             int lineNum = f.LineNumber;
             f.Dispose();
@@ -482,7 +484,7 @@ namespace LargeFileViewer
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Form? finder = AppForm(FINDFORM);
-            if (finder != null) finder.Close();
+            finder?.Close();
             bManualStop = true;
             Thread.Sleep(1000);
         }
@@ -669,7 +671,7 @@ namespace LargeFileViewer
             if (defaultFont != null) fileViewer.Font = defaultFont;
             Application.DoEvents();
 
-            Thread t = new Thread(IndexFile)
+            Thread t = new(IndexFile)
             {
                 Name = "FileOpen",
                 Priority = ThreadPriority.AboveNormal
@@ -701,8 +703,7 @@ namespace LargeFileViewer
             }
             if (e.displayMode == DisplayMode.Hex) { FV_GetHexItem(e); return; }
 
-            LineIndex li = new();
-            if (!idx.TryGetValue(e.line + 1, out li))
+            if (!idx.TryGetValue(e.line + 1, out LineIndex li))
             {
                 throw new Exception(string.Format("Invalid Item Index : {0}", e.line.ToString()));
             }
@@ -725,7 +726,7 @@ namespace LargeFileViewer
         }
 
         //  Translate the line to hex
-        void FV_GetHexItem(RetrieveItemEventArgs e)
+        static void FV_GetHexItem(RetrieveItemEventArgs e)
         {
             long position = e.line * (long)HexLineLen;
             FileStream fs = File.Open(FileProperties.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -743,8 +744,8 @@ namespace LargeFileViewer
                 sb.Append(HexString[i - 1]);
                 if (i % 8 == 0)
                 {
-                    sb.Append(" ");
-                    if (i % 32 == 0) sb.Append(" ");
+                    sb.Append(' ');
+                    if (i % 32 == 0) sb.Append(' ');
                 }
             }
             sb.Append(new string(' ', (int)TotHexLineLen - sb.Length));

@@ -13,7 +13,7 @@ using System.Diagnostics;
 namespace LargeFileViewer
 {
     
-    internal static class common
+    internal static class Common
     {
         #region constants
 
@@ -39,7 +39,7 @@ namespace LargeFileViewer
         /// <summary>
         /// Static Constructor
         /// </summary>
-        static common()
+        static Common()
         {
             // Create a character map used to display characters in the hex version
             // of the listview
@@ -48,7 +48,6 @@ namespace LargeFileViewer
             {
                 if (i < 128)
                 {
-                    byte b = Convert.ToByte(i);
                     CharMap[i] = Char.IsLetterOrDigit((char)i) || Char.IsPunctuation((char)i) || Char.IsSeparator((char)i) || Char.IsSymbol((char)i) ? Char.ConvertFromUtf32(i) : ".";
                 }
                 else { CharMap[i] = "."; }
@@ -65,12 +64,14 @@ namespace LargeFileViewer
         /// <returns></returns>
         internal static bool GetFont(Font? font)
         {
-            FontDialog fontDlg = new FontDialog();
-            fontDlg.ShowColor = true;
-            fontDlg.ShowApply = true;
-            fontDlg.ShowEffects = true;
-            fontDlg.ShowHelp = true;
-            fontDlg.FontMustExist = true;
+            FontDialog fontDlg = new() 
+            {
+                ShowColor = true,
+                ShowApply = true,
+                ShowEffects = true,
+                ShowHelp = true,
+                FontMustExist = true
+            };
             if (font != null) fontDlg.Font = font;
             if (fontDlg.ShowDialog() == DialogResult.Cancel) return false;
             SelectedFont = fontDlg.Font;
@@ -83,10 +84,12 @@ namespace LargeFileViewer
         /// </summary>
         internal static void StartApp()
         {
-            ProcessStartInfo start = new ProcessStartInfo();
-            start.FileName = Environment.ProcessPath;
-            start.WindowStyle = ProcessWindowStyle.Normal;
-            start.UseShellExecute = false;
+            ProcessStartInfo start = new()
+            {
+                FileName = Environment.ProcessPath,
+                WindowStyle = ProcessWindowStyle.Normal,
+                UseShellExecute = false
+            };
             Process.Start(start);
         }
 
